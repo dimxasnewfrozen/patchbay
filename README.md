@@ -7,16 +7,18 @@
 ![Go](https://img.shields.io/badge/go-1.22+-00ADD8.svg)
 ![Platform](https://img.shields.io/badge/platform-windows%20%7C%20macos%20%7C%20linux-lightgrey.svg)
 
-Postman and Insomnia treat WebSockets as a second-class citizen. Patchbay is built around them. Stay connected, send multiple messages, watch the full-duplex stream in real time, and save everything — without writing a throwaway script or reaching for `wscat`.
+Most API tools bolt WebSocket support on as an afterthought. Patchbay is built around it. Stay connected, send multiple messages, watch the full-duplex stream in real time, and save everything — without writing a throwaway script or reaching for `wscat`.
 
 Built with [Wails](https://wails.io/) (Go + React). Compiles to a lightweight native binary — no Electron, no browser tab.
+
+<video src="patchbay.mp4" controls width="100%"></video>
 
 ---
 
 ## Features
 
 - **Persistent connections** — stay connected and watch the full-duplex stream live, color-coded by direction
-- **Multiple tabs** — run several connections simultaneously; useful for simulating multiple clients against pub/sub or matchmaking APIs
+- **Multiple tabs** — run several connections simultaneously; useful for testing multiple concurrent clients
 - **Message history** — sent and received messages persist to disk and reload when you reopen a tab
 - **JSON pretty-printing** — payloads are automatically formatted if valid JSON
 - **Saved sessions** — bookmark URLs you connect to frequently
@@ -85,13 +87,13 @@ A JSON-defined sequence of steps that execute automatically against an active co
 - `waitFor` — block until a received message matches a pattern, with timeout and optional value extraction
 - `delay` — pause for N milliseconds
 
-Flows are saved alongside sessions and templates. Useful for automating stateful sequences like auth → matchmaking → game start without manually stepping through each message.
+Flows are saved alongside sessions and templates. Useful for automating stateful sequences like auth handshakes, subscriptions, and multi-step interactions without manually stepping through each message.
 
 #### Response filtering
 A live filter bar above the message stream. Type a string or field value and only matching messages are shown. Cuts through noise on high-volume connections.
 
 #### Multi-connection broadcast
-Select two or more open tabs and send a message to all of them simultaneously. Useful for testing pub/sub fan-out, simulating multiple players in a matchmaking queue, or verifying a server event reaches every connected client.
+Select two or more open tabs and send a message to all of them simultaneously. Useful for testing pub/sub fan-out, simulating multiple concurrent clients, or verifying a server event reaches every connection.
 
 #### Session recording and replay
 Record a full session — the complete sequence of sent and received messages with timestamps — to a file. Replay it against any endpoint. Useful for reproducing bugs, running the same flow repeatedly during development, or sharing a reproduction case.
