@@ -2,7 +2,7 @@
 
 **A native desktop WebSocket client built for developers.**
 
-![CI](https://github.com/yourusername/patchbay/actions/workflows/ci.yml/badge.svg)
+![CI](https://github.com/dimxasnewfrozen/patchbay/actions/workflows/ci.yml/badge.svg)
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![Go](https://img.shields.io/badge/go-1.22+-00ADD8.svg)
 ![Platform](https://img.shields.io/badge/platform-windows%20%7C%20macos%20%7C%20linux-lightgrey.svg)
