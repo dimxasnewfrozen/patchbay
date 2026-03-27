@@ -25,7 +25,7 @@ jobs:
 
       # main.go embeds frontend/dist — create a placeholder so the build tag resolves
       - name: Create frontend/dist placeholder
-        run: mkdir -p frontend/dist
+        run: mkdir -p frontend/dist && touch frontend/dist/.keep
 
       - name: Download dependencies
         run: go mod download
