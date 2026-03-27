@@ -11,7 +11,7 @@ Most API tools bolt WebSocket support on as an afterthought. Patchbay is built a
 
 Built with [Wails](https://wails.io/) (Go + React). Compiles to a lightweight native binary — no Electron, no browser tab.
 
-<video src="patchbay.mp4" controls width="100%"></video>
+![Patchbay](patchbay.png)
 
 ---
 
