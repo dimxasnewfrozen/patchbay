@@ -71,7 +71,7 @@ jobs:
 
       # -arch universal produces a single binary for both Intel and Apple Silicon
       - name: Build
-        run: wails build -arch universal
+        run: wails build -platform darwin/universal
 
       # Wrap the .app bundle in a DMG for distribution
       - name: Create DMG
@@ -91,7 +91,7 @@ jobs:
   # ── Linux ──────────────────────────────────────────────────────────────────
   build-linux:
     name: Linux
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
 
