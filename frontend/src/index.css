@@ -20,6 +20,8 @@
 body { height: 100vh; overflow: hidden; }
 #root { height: 100vh; display: flex; flex-direction: column; }
 
+/* ── Buttons ──────────────────────────────────────────────── */
+
 button {
   cursor: pointer;
   border: 1px solid var(--border);
@@ -30,12 +32,16 @@ button {
   font-size: 12px;
   transition: background 0.15s;
 }
-button:hover { background: #3a3a3a; }
+button:hover    { background: #3a3a3a; }
 button:disabled { opacity: 0.4; cursor: default; }
-button.primary { background: #1a4a7a; border-color: #2a6aaa; color: #fff; }
+
+button.primary       { background: #1a4a7a; border-color: #2a6aaa; color: #fff; }
 button.primary:hover { background: #2a5a8a; }
-button.danger { background: #4a1a1a; border-color: #7a2a2a; color: #f88; }
-button.danger:hover { background: #5a2a2a; }
+
+button.danger        { background: #4a1a1a; border-color: #7a2a2a; color: #f88; }
+button.danger:hover  { background: #5a2a2a; }
+
+/* ── Inputs ───────────────────────────────────────────────── */
 
 input, textarea {
   background: var(--surface2);
@@ -54,7 +60,63 @@ textarea {
   font-size: 12px;
 }
 
-::-webkit-scrollbar { width: 6px; height: 6px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: #444; border-radius: 3px; }
+/* ── Connection status badge (OPEN / CLOSED) ──────────────── */
+
+.status-badge {
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+.status-badge.open {
+  background: #1a3a1a;
+  color: var(--received);
+  border: 1px solid #2a5a2a;
+}
+.status-badge.closed {
+  background: #3a1a1a;
+  color: var(--danger);
+  border: 1px solid #5a2a2a;
+}
+
+/* ── Inline error notification ────────────────────────────── */
+
+.error-banner {
+  padding: 6px 12px;
+  background: #2a1a1a;
+  color: #f88;
+  border-bottom: 1px solid #5a2a2a;
+  font-size: 12px;
+  flex-shrink: 0;
+}
+
+/* ── Message bubbles ──────────────────────────────────────── */
+
+.message-bubble {
+  background: var(--surface2);
+  border-radius: var(--radius);
+  font-family: 'Cascadia Code', 'Fira Code', Consolas, monospace;
+  font-size: 12px;
+  white-space: pre-wrap;
+  word-break: break-all;
+  max-width: 85%;
+  margin: 0;
+}
+.message-bubble.sent {
+  border: 1px solid #1a3a5a;
+  color: #c8e0ff;
+}
+.message-bubble.received {
+  border: 1px solid #1a3a1a;
+  color: #c8ffc8;
+}
+.message-bubble.compact  { padding: 5px 10px; }
+.message-bubble.expanded { padding: 8px 12px; }
+
+/* ── Scrollbar ────────────────────────────────────────────── */
+
+::-webkit-scrollbar        { width: 6px; height: 6px; }
+::-webkit-scrollbar-track  { background: transparent; }
+::-webkit-scrollbar-thumb  { background: #444; border-radius: 3px; }
 ::-webkit-scrollbar-thumb:hover { background: #555; }

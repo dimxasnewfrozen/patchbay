@@ -1,82 +1,65 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
-import { EventsOn, EventsOff } from '../../wailsjs/runtime/runtime'
-import { Connect, Disconnect, SendMessage, GetHistory, ClearHistory, SaveSession, SaveTemplate } from '../../wailsjs/go/main/App'
+import { useState, useRef, useEffect, useCallback } from 'react'
 import MessageList from './MessageList'
+import { useConnectionTab } from '../hooks/useConnectionTab'
 
+/**
+ * A single connection tab — the main working area of the app.
+ *
+ * Renders the URL bar, live message stream, and compose area for one
+ * WebSocket connection. All connection and persistence logic lives in
+ * the useConnectionTab hook; this component is purely presentational.
+ *
+ * @param {object}        props.tab            - Tab descriptor ({ id, url, label })
+ * @param {function}      props.onRename       - Called with a new label when connected
+ * @param {function}      props.onDataSaved    - Called when a session or template is saved
+ * @param {{ content, key }|null} props.templateInject - Payload injected from the sidebar
+ */
 export default function ConnectionTab({ tab, onRename, onDataSaved, templateInject }) {
-  const [url, setUrl] = useState(tab.url || '')
-  const [connected, setConnected] = useState(false)
-  const [connecting, setConnecting] = useState(false)
-  const [messages, setMessages] = useState([])
-  const [input, setInput] = useState('')
-  const [error, setError] = useState('')
+  const [url, setUrl]                       = useState(tab.url || '')
+  const [input, setInput]                   = useState('')
+  const [savingSession, setSavingSession]   = useState(false)
   const [saveSessionName, setSaveSessionName] = useState('')
-  const [savingSession, setSavingSession] = useState(false)
-  const [saveTemplateName, setSaveTemplateName] = useState('')
   const [savingTemplate, setSavingTemplate] = useState(false)
+  const [saveTemplateName, setSaveTemplateName] = useState('')
   const inputRef = useRef(null)
 
+  const {
+    connected,
+    connecting,
+    messages,
+    error,
+    connect,
+    disconnect,
+    send,
+    clearHistory,
+    saveSession,
+    saveTemplate,
+  } = useConnectionTab(tab, onRename, onDataSaved)
+
+  // When the sidebar injects a template, populate the compose area.
   useEffect(() => {
     if (templateInject) setInput(templateInject.content)
   }, [templateInject])
 
-  // Load history on mount
-  useEffect(() => {
-    GetHistory(tab.id).then(hist => {
-      if (hist && hist.length > 0) setMessages(hist)
-    }).catch(() => {})
-  }, [tab.id])
-
-  // Subscribe to events for this connection
-  useEffect(() => {
-    const msgKey = 'message:' + tab.id
-    const closeKey = 'connection:closed:' + tab.id
-
-    EventsOn(msgKey, (msg) => {
-      setMessages(prev => [...prev, msg])
-    })
-    EventsOn(closeKey, () => {
-      setConnected(false)
-      setError('Connection closed by server')
-    })
-
-    return () => {
-      EventsOff(msgKey)
-      EventsOff(closeKey)
-    }
-  }, [tab.id])
+  // ── Handlers ──────────────────────────────────────────────
 
   const handleConnect = async () => {
     if (!url.trim()) return
-    setConnecting(true)
-    setError('')
-    try {
-      await Connect(tab.id, url.trim())
-      setConnected(true)
-      onRename(url.trim().replace(/^wss?:\/\//, ''))
-    } catch (e) {
-      setError(String(e))
-    } finally {
-      setConnecting(false)
-    }
-  }
-
-  const handleDisconnect = async () => {
-    await Disconnect(tab.id)
-    setConnected(false)
+    await connect(url.trim())
   }
 
   const handleSend = useCallback(async () => {
     if (!input.trim() || !connected) return
     try {
-      await SendMessage(tab.id, input.trim())
+      await send(input.trim())
       setInput('')
       inputRef.current?.focus()
-    } catch (e) {
-      setError(String(e))
+    } catch {
+      // Error is already surfaced by the hook via the `error` value.
     }
-  }, [input, connected, tab.id])
+  }, [input, connected, send])
 
+  // Ctrl+Enter / Cmd+Enter submits the compose area.
   const handleKeyDown = (e) => {
     if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
       e.preventDefault()
@@ -84,50 +67,40 @@ export default function ConnectionTab({ tab, onRename, onDataSaved, templateInje
     }
   }
 
-  const handleClear = async () => {
-    await ClearHistory(tab.id)
-    setMessages([])
-  }
-
   const handleSaveSession = async () => {
     if (!saveSessionName.trim()) return
     try {
-      await SaveSession(saveSessionName.trim(), url.trim())
+      await saveSession(saveSessionName.trim(), url.trim())
       setSaveSessionName('')
       setSavingSession(false)
-      onDataSaved()
-    } catch (e) {
-      setError(String(e))
+    } catch {
+      // Error surfaced by the hook.
     }
   }
 
   const handleSaveTemplate = async () => {
     if (!saveTemplateName.trim() || !input.trim()) return
     try {
-      await SaveTemplate(saveTemplateName.trim(), input.trim())
+      await saveTemplate(saveTemplateName.trim(), input.trim())
       setSaveTemplateName('')
       setSavingTemplate(false)
-      onDataSaved()
-    } catch (e) {
-      setError(String(e))
+    } catch {
+      // Error surfaced by the hook.
     }
   }
 
+  // ── Render ────────────────────────────────────────────────
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
-      {/* URL bar */}
+
+      {/* URL bar — connection controls */}
       <div style={{
         display: 'flex', gap: 8, alignItems: 'center',
         padding: '8px 12px', borderBottom: '1px solid var(--border)',
         background: 'var(--surface)', flexShrink: 0,
       }}>
-        <span style={{
-          padding: '4px 8px', borderRadius: 4, fontSize: 11, fontWeight: 700,
-          background: connected ? '#1a3a1a' : '#3a1a1a',
-          color: connected ? 'var(--received)' : 'var(--danger)',
-          border: '1px solid ' + (connected ? '#2a5a2a' : '#5a2a2a'),
-          flexShrink: 0,
-        }}>
+        <span className={`status-badge ${connected ? 'open' : 'closed'}`}>
           {connected ? 'OPEN' : 'CLOSED'}
         </span>
 
@@ -145,11 +118,16 @@ export default function ConnectionTab({ tab, onRename, onDataSaved, templateInje
             {connecting ? 'Connecting…' : 'Connect'}
           </button>
         ) : (
-          <button className="danger" onClick={handleDisconnect}>Disconnect</button>
+          <button className="danger" onClick={disconnect}>Disconnect</button>
         )}
 
+        {/* Save session — inline name prompt */}
         {!savingSession ? (
-          <button onClick={() => setSavingSession(true)} disabled={!url.trim()} title="Save this URL as a session">
+          <button
+            onClick={() => setSavingSession(true)}
+            disabled={!url.trim()}
+            title="Save this URL as a session"
+          >
             Save
           </button>
         ) : (
@@ -168,19 +146,13 @@ export default function ConnectionTab({ tab, onRename, onDataSaved, templateInje
         )}
       </div>
 
-      {error && (
-        <div style={{
-          padding: '6px 12px', background: '#2a1a1a', color: '#f88',
-          borderBottom: '1px solid #5a2a2a', fontSize: 12, flexShrink: 0,
-        }}>
-          {error}
-        </div>
-      )}
+      {/* Error banner — shown when the last operation failed */}
+      {error && <div className="error-banner">{error}</div>}
 
       {/* Message stream */}
       <MessageList messages={messages} />
 
-      {/* Message count / clear */}
+      {/* Message count + clear button */}
       {messages.length > 0 && (
         <div style={{
           display: 'flex', justifyContent: 'flex-end', alignItems: 'center',
@@ -188,11 +160,11 @@ export default function ConnectionTab({ tab, onRename, onDataSaved, templateInje
           background: 'var(--surface)', gap: 8, flexShrink: 0,
         }}>
           <span style={{ color: 'var(--muted)', fontSize: 11 }}>{messages.length} messages</span>
-          <button onClick={handleClear} style={{ padding: '2px 8px', fontSize: 11 }}>Clear</button>
+          <button onClick={clearHistory} style={{ padding: '2px 8px', fontSize: 11 }}>Clear</button>
         </div>
       )}
 
-      {/* Input area */}
+      {/* Compose area */}
       <div style={{
         borderTop: '1px solid var(--border)', background: 'var(--surface)',
         padding: '8px 12px', display: 'flex', flexDirection: 'column', gap: 6, flexShrink: 0,
@@ -202,11 +174,13 @@ export default function ConnectionTab({ tab, onRename, onDataSaved, templateInje
           value={input}
           onChange={e => setInput(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder='Message payload — Ctrl+Enter to send'
+          placeholder="Message payload — Ctrl+Enter to send"
           rows={4}
           style={{ width: '100%' }}
         />
         <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', alignItems: 'center' }}>
+
+          {/* Save template — inline name prompt */}
           {savingTemplate ? (
             <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
               <input
@@ -221,10 +195,15 @@ export default function ConnectionTab({ tab, onRename, onDataSaved, templateInje
               <button onClick={() => setSavingTemplate(false)}>✕</button>
             </div>
           ) : (
-            <button onClick={() => setSavingTemplate(true)} disabled={!input.trim()} title="Save as template">
+            <button
+              onClick={() => setSavingTemplate(true)}
+              disabled={!input.trim()}
+              title="Save as template"
+            >
               Save as template
             </button>
           )}
+
           <button
             className="primary"
             onClick={handleSend}
@@ -235,6 +214,7 @@ export default function ConnectionTab({ tab, onRename, onDataSaved, templateInje
           </button>
         </div>
       </div>
+
     </div>
   )
 }
