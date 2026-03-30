@@ -7,7 +7,9 @@ import (
 )
 
 // App is the main application struct. All exported methods are bound to the
-// Wails runtime and callable from the frontend via the generated JS bindings.
+// Wails runtime and become callable from the frontend via the generated JS
+// bindings. Method names must stay stable across releases to avoid breaking
+// the bindings.
 type App struct {
 	ctx     context.Context
 	manager *WSManager
@@ -19,32 +21,33 @@ func NewApp() *App {
 	return &App{}
 }
 
-// startup is called by the Wails runtime after the app window is ready.
-// It initialises the store and WebSocket manager.
+// startup is invoked by the Wails runtime after the application window is
+// ready. It initialises the persistent store and the WebSocket manager.
 func (a *App) startup(ctx context.Context) {
 	a.ctx = ctx
 	a.store = NewStore()
 	a.manager = NewWSManager(ctx)
 }
 
-// shutdown is called by the Wails runtime when the window is closed.
-// It closes all active WebSocket connections and the database.
+// shutdown is invoked by the Wails runtime when the window is closed.
+// It tears down all active WebSocket connections and flushes the database.
 func (a *App) shutdown(_ context.Context) {
 	a.manager.CloseAll()
 	a.store.Close()
 }
 
-// --- Connection ---
+// ── Connection ────────────────────────────────────────────────────────────────
 
 // Connect opens a WebSocket connection identified by id to the given url.
+//
 // Incoming messages are emitted as "message:<id>" Wails events and persisted
-// to the message history. A "connection:closed:<id>" event is emitted if the
-// connection drops unexpectedly.
+// to the message history. A "connection:closed:<id>" event is emitted only if
+// the connection drops unexpectedly; deliberate disconnects are silent.
 func (a *App) Connect(id, url string) error {
 	return a.manager.Connect(id, url,
 		func(msg Message) {
 			runtime.EventsEmit(a.ctx, "message:"+id, msg)
-			a.store.SaveMessage(msg)
+			a.store.SaveMessage(msg) //nolint:errcheck // best-effort persistence
 		},
 		func() {
 			runtime.EventsEmit(a.ctx, "connection:closed:"+id, nil)
@@ -53,6 +56,8 @@ func (a *App) Connect(id, url string) error {
 }
 
 // Disconnect closes the WebSocket connection identified by id.
+// The frontend is not notified (no event is emitted) because the disconnect
+// was user-initiated.
 func (a *App) Disconnect(id string) error {
 	return a.manager.Disconnect(id)
 }
@@ -65,11 +70,11 @@ func (a *App) SendMessage(id, content string) error {
 		return err
 	}
 	runtime.EventsEmit(a.ctx, "message:"+id, msg)
-	a.store.SaveMessage(msg)
+	a.store.SaveMessage(msg) //nolint:errcheck // best-effort persistence
 	return nil
 }
 
-// --- History ---
+// ── History ───────────────────────────────────────────────────────────────────
 
 // GetHistory returns up to 1000 messages for the given connection ID,
 // ordered oldest-first. Used to restore the message stream on tab load.
@@ -82,7 +87,7 @@ func (a *App) ClearHistory(connectionID string) error {
 	return a.store.ClearMessages(connectionID)
 }
 
-// --- Sessions ---
+// ── Sessions ──────────────────────────────────────────────────────────────────
 
 // SaveSession persists a named session (URL bookmark) to the database.
 func (a *App) SaveSession(name, url string) error {
@@ -99,7 +104,7 @@ func (a *App) DeleteSession(id string) error {
 	return a.store.DeleteSession(id)
 }
 
-// --- Templates ---
+// ── Templates ─────────────────────────────────────────────────────────────────
 
 // SaveTemplate persists a named message template to the database.
 func (a *App) SaveTemplate(name, content string) error {

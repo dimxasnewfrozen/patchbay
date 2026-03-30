@@ -5,6 +5,7 @@ package main
 
 import (
 	"embed"
+	"log"
 
 	"github.com/wailsapp/wails/v2"
 	"github.com/wailsapp/wails/v2/pkg/options"
@@ -26,14 +27,16 @@ func main() {
 		AssetServer: &assetserver.Options{
 			Assets: assets,
 		},
+		// Match the CSS --bg colour so the window background is consistent
+		// before the frontend finishes loading.
 		BackgroundColour: &options.RGBA{R: 26, G: 26, B: 26, A: 1},
 		OnStartup:        app.startup,
 		OnShutdown:       app.shutdown,
-		Bind: []interface{}{
+		Bind: []any{
 			app,
 		},
 	})
 	if err != nil {
-		println("Error:", err.Error())
+		log.Fatal(err)
 	}
 }

@@ -1,0 +1,38 @@
+run:
+  timeout: 5m
+
+linters:
+  enable:
+    - errcheck        # flag ignored error return values
+    - govet           # standard go vet checks
+    - staticcheck     # comprehensive static analysis (SA*, S*, QF*)
+    - gosimple        # suggest simpler constructs
+    - ineffassign     # detect assignments whose values are never used
+    - unused          # report unexported declarations that are never used
+    - revive          # drop-in replacement for golint
+    - goimports       # check import grouping and formatting
+    - misspell        # catch common English spelling mistakes in comments
+    - noctx           # flag http requests made without a context
+    - bodyclose       # ensure http response bodies are closed
+
+linters-settings:
+  revive:
+    rules:
+      # Require doc comments on all exported identifiers.
+      - name: exported
+        arguments:
+          - checkPrivateReceivers: true
+
+  errcheck:
+    # Ignore errors from fmt.Fprintf and similar write helpers.
+    ignore: "fmt:.*"
+
+issues:
+  # Show all issues, not just the first few per linter.
+  max-issues-per-linter: 0
+  max-same-issues: 0
+
+  exclude-rules:
+    # Test files can use t.Fatal-style helpers without wrapping errors.
+    - path: _test\.go
+      linters: [errcheck]
